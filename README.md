@@ -1,70 +1,153 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 📂 TEC-BLOK Features with React, Axios, and Modal
 
-## Available Scripts
+A simple React project that demonstrates how to implement a file upload feature using **Axios**, a dynamic modal component, and environment variables for API configuration.
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+- 📤 **File Upload**: Upload files to a backend server.
+- 💡 **Dynamic Modal**: A reusable modal component for user interaction.
+- ⚙️ **Environment Configurations**: API URLs are stored in a `.env` file for better flexibility.
+- 🔧 **Customizable**: Easily adaptable for different backend configurations and endpoints.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 📋 Table of Contents
 
-### `npm test`
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Usage](#-usage)
+- [Dependencies](#-dependencies)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 🛠️ Getting Started
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Follow these instructions to get a copy of the project up and running on your local machine.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Prerequisites
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Make sure you have the following installed:
+- [Node.js](https://nodejs.org/) (v14 or higher)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
 
-### `npm run eject`
+### Installation
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/dinoru/tec_bloc_interface.git
+   cd tec_bloc_interface
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+   _or_
+   ```bash
+   yarn
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+3. Create a `.env` file in the root directory and add your API URLs:
+   ```env
+   REACT_APP_API_URL=http://62.217.182.141:8000
+   REACT_APP_UPLOAD_ENDPOINT=/tasks/upload
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+4. Start the development server:
+   ```bash
+   npm start
+   ```
+   _or_
+   ```bash
+   yarn start
+   ```
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📁 Project Structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+├── src
+│   ├── components
+│   │   ├── Button.js       # Reusable button component
+│   │   ├── Modal.js        # Reusable modal component
+│   │   └── Add.js
+|   |       # Main feature component
+│   ├── App.js              # Application root component
+│   ├── index.js            # Entry point
+│   └── config.js           # API configuration file
+├── .env                    # Environment variables for API URLs
+├── package.json            # Project metadata and dependencies
+└── README.md               # Project documentation
+```
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 💻 Usage
 
-### Analyzing the Bundle Size
+### Running the Application
+- Click the **"Загрузить Файл"** button to open the upload modal.
+- Select a file and upload it.
+- If successful, you will see a success alert; otherwise, an error alert will be displayed.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Customizing API Endpoints
+- Modify the `.env` file to set the correct API URL and upload endpoint.
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 📦 Dependencies
 
-### Advanced Configuration
+- **React**: Frontend library for building user interfaces.
+- **Axios**: Promise-based HTTP client for API communication.
+- **React Icons**: For beautiful, scalable icons.
+- **Tailwind CSS**: For styling (if applicable).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Install all dependencies via:
+```bash
+npm install
+```
+_or_
+```bash
+yarn
+```
 
-### Deployment
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🤝 Contributing
 
-### `npm run build` fails to minify
+Contributions are welcome! To contribute:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. Fork the repository.
+2. Create your feature branch:
+   ```bash
+   git checkout -b feature/YourFeature
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m "Add some feature"
+   ```
+4. Push to the branch:
+   ```bash
+   git push origin feature/YourFeature
+   ```
+5. Open a pull request.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+## ✨ Acknowledgments
+
+- [Axios Documentation](https://axios-http.com/docs/intro)
+- [React Modal Example](https://reactjs.org/docs/getting-started.html)
+- [React Icons](https://react-icons.github.io/react-icons/)
+
+---
