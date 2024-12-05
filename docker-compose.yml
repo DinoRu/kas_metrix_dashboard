@@ -1,0 +1,14 @@
+version: "3"
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5050:80"
+    networks:
+      - frontend_network
+
+networks:
+  frontend_network:
+    driver: bridge
