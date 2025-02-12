@@ -12,7 +12,7 @@ const Delete = () => {
       const apiUrl = config().clear;
       try {
         const response = await axios.delete(apiUrl);
-        if (response.status === 200) {
+        if (response.status === 204) {
           alert("Файл успешно удален");
           console.log("Файл успешно удален");
         } else {

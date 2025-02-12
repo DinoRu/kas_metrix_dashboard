@@ -1,8 +1,8 @@
 const config = () => {
     const baseUrl = "http://62.217.182.141:8000"
-    const upload = `${baseUrl}/tasks/upload`
-    const download = `${baseUrl}/tasks/download`
-    const clear = `${baseUrl}/tasks`
+    const upload = `${baseUrl}/task/upload`
+    const download = `${baseUrl}/task/download`
+    const clear = `${baseUrl}/task/clear`
     const update = (taskId) => `${baseUrl}/tasks/${taskId}`
 
     return {
