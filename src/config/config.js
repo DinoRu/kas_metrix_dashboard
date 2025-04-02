@@ -5,7 +5,7 @@ const config = () => {
   const downloadApk = `${baseUrl}/task/download_apk`;
   const clear = `${baseUrl}/task/clear`;
   const update = (taskId) => `${baseUrl}/tasks/${taskId}`;
-  const localuri = 'http://localhost:8000/auth';
+  const localuri = `${baseUrl}/auth`;
   const getusers = `${localuri}/users`;
   const createuser = `${localuri}/signup`;
   const login = `${localuri}/login`;
