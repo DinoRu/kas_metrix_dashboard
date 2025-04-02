@@ -22,6 +22,12 @@ const Login = () => {
         },
       });
 
+      const user = response.data.user;
+      if (user.role != 'admin') {
+        setError('Доступ запрещен: только администраторы могут войти.');
+        return;
+      }
+
       localStorage.setItem('authToken', response.data.access_token);
       localStorage.setItem('userData', JSON.stringify(response.data.user));
       navigate('/dashboard');
