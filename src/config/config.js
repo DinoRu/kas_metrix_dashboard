@@ -11,6 +11,7 @@ const config = () => {
   const login = `${localuri}/login`;
   const deleteuser = (userId) => `${localuri}/${userId}`;
   const updateuser = (userId) => `${localuri}/update/${userId}`;
+  const getuser = (userId) => `${localuri}/users/${userId}`;
 
   return {
     baseUrl,
@@ -24,6 +25,7 @@ const config = () => {
     login,
     deleteuser,
     updateuser,
+    getuser,
   };
 };
 

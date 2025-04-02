@@ -54,10 +54,6 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  const handleEdit = (user) => {
-    setEditingUser(user);
-  };
-
   const handleDelete = async (userId) => {
     if (window.confirm('Подтвердить удаление пользователя?')) {
       try {
@@ -152,7 +148,7 @@ const Dashboard = () => {
             className="w-full p-2 border rounded"
             value={editingUser.username}
             onChange={(e) =>
-              setEditingUser({ ...editingUser, username: e.target.value })
+              setEditingUser((prev) => ({ ...prev, username: e.target.value }))
             }
           />
         </label>
@@ -163,7 +159,7 @@ const Dashboard = () => {
             className="w-full p-2 border rounded"
             value={editingUser.full_name}
             onChange={(e) =>
-              setEditingUser({ ...editingUser, full_name: e.target.value })
+              setEditingUser((prev) => ({ ...prev, full_name: e.target.value }))
             }
           />
         </label>
@@ -223,7 +219,7 @@ const Dashboard = () => {
               <td className="px-6 py-4">
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleEdit(user)}
+                    onClick={() => navigate(`/edit-user/${user.uid}`)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                     title="Редактировать"
                   >

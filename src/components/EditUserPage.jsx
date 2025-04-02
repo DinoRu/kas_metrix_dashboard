@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaUser, FaIdCard, FaSave } from 'react-icons/fa';
 import axios from 'axios';
 import config from '../config/config';
+import { LoadingMessage } from './LoadingMessage';
 
 const EditUser = () => {
   const { userId } = useParams();
@@ -18,9 +19,11 @@ const EditUser = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`${config().getUser}/${userId}`, {
+        const uri = config().getuser(userId);
+        const response = await axios.get(uri, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+            Accept: 'application/json',
+            // Authorization: `Bearer ${localStorage.getItem('authToken')}`,
           },
         });
 
@@ -41,16 +44,13 @@ const EditUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.patch(
-        `${config().updateUser}/${userId}`,
-        userData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-          },
+      const uri = config().updateuser(userId);
+      const response = await axios.patch(uri, userData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
         },
-      );
+      });
 
       if (response.status === 200) {
         setSuccess('Данные пользователя успешно обновлены!');
@@ -61,13 +61,8 @@ const EditUser = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
-  }
+  if (loading)
+    return <LoadingMessage message="Загрузка данных пользователя..." />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
