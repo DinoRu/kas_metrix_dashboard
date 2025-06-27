@@ -1,39 +1,36 @@
-import axios from 'axios';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
-import config from '../config/config';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/authContext';
+import { FaUser, FaLock, FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
-  const [credentials, setCredentials] = useState({
-    username: '',
-    password: '',
-  });
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
     try {
-      const response = await axios.post(config().login, credentials, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-      });
-
-      const user = response.data.user;
-      if (user.role != 'admin') {
-        setError('Доступ запрещен: только администраторы могут войти.');
-        return;
+      const success = await login(username, password);
+      if (success) {
+        navigate('/');
       }
-
-      localStorage.setItem('authToken', response.data.access_token);
-      localStorage.setItem('userData', JSON.stringify(response.data.user));
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка авторизации');
+    } catch (error) {
+      setError(error.message || 'Une erreur est survenue');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -55,10 +52,9 @@ const Login = () => {
                 type="text"
                 placeholder="Логин"
                 className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
-                value={credentials.username}
-                onChange={(e) =>
-                  setCredentials({ ...credentials, username: e.target.value })
-                }
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
               />
             </div>
 
@@ -66,14 +62,20 @@ const Login = () => {
               <FaLock className="absolute top-1/2 left-4 transform -translate-y-1/2 text-gray-400" />
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Пароль"
-                className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
-                value={credentials.password}
-                onChange={(e) =>
-                  setCredentials({ ...credentials, password: e.target.value })
-                }
+                className="w-full pl-12 pr-10 py-3 rounded-lg border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
+              <button
+                type="button"
+                className="absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
             </div>
           </div>
 
@@ -96,21 +98,50 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center"
+            disabled={isLoading}
+            className={`w-full ${
+              isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-600 to-blue-500 hover:shadow-lg'
+            } text-white py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center`}
           >
-            <FaSignInAlt className="mr-2" />
-            Войти
+            {isLoading ? (
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              <>
+                <FaSignInAlt className="mr-2" />
+                Войти
+              </>
+            )}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            className="text-purple-600 hover:text-purple-700 text-sm underline"
-            onClick={() => alert('Password recovery not implemented yet')}
+        <div className="mt-6 text-center space-y-3">
+          <Link
+            to="/reset-password"
+            className="text-purple-600 hover:text-purple-700 text-sm underline block"
           >
             Забыли пароль?
-          </button>
+          </Link>
         </div>
       </div>
     </div>
