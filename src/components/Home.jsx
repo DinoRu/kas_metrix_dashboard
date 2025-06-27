@@ -24,10 +24,11 @@ dayjs.locale('ru');
 function Home() {
   const { user, hasPermission, logout } = useAuth();
   const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [tasksPerPage] = useState(5);
+  const [tasksPerPage, setTasksPerPage] = useState(15);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -44,10 +45,26 @@ function Home() {
         setLoading(false);
       }
     };
+
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get('/auth/users');
+        setUsers(response.data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des utilisateurs', error);
+      }
+    };
     if (user) {
       fetchCompletedTasks();
+      fetchUsers();
     }
-  }, [user]);
+  }, [user, navigate]);
+
+  // Fonction pour obtenir le nom complet
+  const getFullName = (username) => {
+    const user = users.find((u) => u.username === username);
+    return user ? user.full_name : username;
+  };
 
   // Filtrer les tâches en fonction du terme de recherche
   useEffect(() => {
@@ -60,7 +77,7 @@ function Home() {
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           task.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.worker?.username
+          task.work?.username
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           task.comments?.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -149,8 +166,29 @@ function Home() {
               )}
               <Download />
               {hasPermission(['admin']) && <Delete />}
-            </div>
 
+              {/* Ajoutez le sélecteur ici */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="itemsPerPage" className="text-sm text-gray-600">
+                  Заданий на страницу:
+                </label>
+                <select
+                  id="itemsPerPage"
+                  value={tasksPerPage}
+                  onChange={(e) => {
+                    setTasksPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  {[5, 10, 25, 50, 100].map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="relative w-full md:w-80">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <FaSearch className="text-gray-400" />
@@ -269,7 +307,10 @@ function Home() {
                             <FaUser />
                           </div>
                           <span className="font-medium">
-                            {task.worker?.username}
+                            {' '}
+                            {task.supervisor
+                              ? getFullName(task.supervisor)
+                              : 'Non assigné'}
                           </span>
                         </div>
                       </td>
