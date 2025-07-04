@@ -121,7 +121,7 @@ function Home() {
               <h1 className="text-2xl md:text-3xl font-bold">Тех-Блок</h1>
               <p className="text-blue-100">
                 {user
-                  ? `Привет, ${user.username}!`
+                  ? `Привет, ${getFullName(user.username)}`
                   : 'Система управления задачами'}
               </p>
             </div>
@@ -402,7 +402,7 @@ function Home() {
       {/* Footer */}
       <div className="mt-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center">
         <div className="w-full mx-auto">
-          <p>© 2023 Тех-Блок. Система управления задачами</p>
+          <p>© 2025 Тех-Блок. Система управления задачами</p>
           <p className="text-blue-200 text-sm mt-1">Версия 2.0.1</p>
         </div>
       </div>
