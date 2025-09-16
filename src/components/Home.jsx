@@ -13,6 +13,8 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaUser,
+  FaLeaf,
+  FaTree,
 } from 'react-icons/fa';
 import { Button } from './Button';
 import { useAuth } from '../context/authContext';
@@ -21,77 +23,81 @@ import api from '../api';
 dayjs.extend(customParseFormat);
 dayjs.locale('ru');
 
-function Home() {
+const Home = () => {
   const { user, hasPermission, logout } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [completedTasks, setCompletedTasks] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
+  const [meters, setMeters] = useState([]);
+  const [totalMeters, setTotalMeters] = useState(0);
+  const [filteredMeters, setFilteredMeters] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [tasksPerPage, setTasksPerPage] = useState(15);
+  const [metersPerPage, setMetersPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCompletedTasks = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/task/completed');
-        setCompletedTasks(response.data);
-        setFilteredTasks(response.data);
-      } catch (error) {
-        console.error('Ошибка при получении задач', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchMetersWithReadings = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(
+        `/meters/with-readings?skip=${(currentPage - 1) * metersPerPage}&limit=${metersPerPage}`,
+      );
+      setMeters(response.data.data || []);
+      setTotalMeters(response.data.total || 0);
+      setFilteredMeters(response.data.data || []);
+    } catch (error) {
+      console.error('Ошибка при получении счетчиков:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/auth/users');
-        setUsers(response.data);
+        const response = await api.get('/user/');
+        const fetchedUsers = response.data;
+        if (!Array.isArray(fetchedUsers)) {
+          throw new Error('Expected an array of users');
+        }
+        setUsers(fetchedUsers.filter((u) => u && u.username));
       } catch (error) {
-        console.error('Erreur lors du chargement des utilisateurs', error);
+        console.error('Ошибка при загрузке пользователей:', error);
       }
     };
+
     if (user) {
-      fetchCompletedTasks();
+      fetchMetersWithReadings();
       fetchUsers();
     }
-  }, [user, navigate]);
+  }, [user, currentPage, metersPerPage]);
 
-  // Fonction pour obtenir le nom complet
   const getFullName = (username) => {
     const user = users.find((u) => u.username === username);
     return user ? user.full_name : username;
   };
 
-  // Filtrer les tâches en fonction du terme de recherche
   useEffect(() => {
     if (searchTerm === '') {
-      setFilteredTasks(completedTasks);
+      setFilteredMeters(meters);
     } else {
-      const filtered = completedTasks.filter(
-        (task) =>
-          task.dispatcher_name
+      const filtered = meters.filter(
+        (meter) =>
+          meter.meter_id_code
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          task.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.work?.username
+          meter.location_address
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          task.comments?.toLowerCase().includes(searchTerm.toLowerCase()),
+          meter.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          meter.readings?.notes
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()),
       );
-      setFilteredTasks(filtered);
+      setFilteredMeters(filtered);
     }
-    setCurrentPage(1); // Réinitialiser à la première page après une recherche
-  }, [searchTerm, completedTasks]);
+  }, [searchTerm, meters]);
 
-  // Pagination
-  const indexOfLastTask = currentPage * tasksPerPage;
-  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
-  const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+  const totalPages = Math.ceil(totalMeters / metersPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -106,23 +112,30 @@ function Home() {
       setCurrentPage(currentPage - 1);
     }
   };
+
+  const handleDeleteSuccess = () => {
+    setCurrentPage(1); // Reset to first page
+    fetchMetersWithReadings(); // Refresh meters
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-green-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
+      <header className="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-4 shadow-lg">
         <div className="w-full mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <div className="bg-white p-2 rounded-lg mr-4">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 w-10 h-10 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl">ТБ</span>
+            <div className="bg-white p-2 rounded-lg mr-4 shadow-md">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 w-10 h-10 rounded-full flex items-center justify-center">
+                <FaLeaf className="text-white text-xl" />
               </div>
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Тех-Блок</h1>
-              <p className="text-blue-100">
+              <h1 className="text-2xl md:text-3xl font-bold">КАСПЭНЕРГОСБЫТ</h1>
+              <p className="text-green-100 flex items-center">
                 {user
                   ? `Привет, ${getFullName(user.username)}`
-                  : 'Система управления задачами'}
+                  : 'Система управления счетчиками'}
+                <FaLeaf className="ml-2 text-green-200" />
               </p>
             </div>
           </div>
@@ -131,30 +144,28 @@ function Home() {
             {hasPermission(['admin']) && (
               <Button
                 onClick={() => navigate('/dashboard')}
-                className="bg-blue-500 text-blue-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-50 transition-colors"
+                className="bg-white text-green-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-100 transition-colors shadow-md border border-green-200"
               >
-                <FaUserShield />
-                <span className="hidden md:inline">
+                <FaUserShield className="text-green-800" />
+                <span className="inline md:inline text-green-800">
                   Управление пользователями
                 </span>
               </Button>
             )}
-
             <button
               onClick={logout}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-50 transition-colors"
+              className="bg-white text-red-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-50 transition-colors shadow-md border border-red-200"
             >
               <FaSignOutAlt />
               <span className="hidden md:inline">Выход</span>
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="p-4 md:p-8">
-        {/* Actions */}
-        <div className="w-full mx-auto bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
+      <main className="flex-1 p-4 md:p-8">
+        <div className="w-full mx-auto bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 border border-green-100">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-wrap gap-3">
               {hasPermission(['admin', 'user']) && (
@@ -165,21 +176,24 @@ function Home() {
                 />
               )}
               <Download />
-              {hasPermission(['admin']) && <Delete />}
-
-              {/* Ajoutez le sélecteur ici */}
+              {hasPermission(['admin']) && (
+                <Delete onDeleteSuccess={handleDeleteSuccess} />
+              )}
               <div className="flex items-center gap-2">
-                <label htmlFor="itemsPerPage" className="text-sm text-gray-600">
-                  Заданий на страницу:
+                <label
+                  htmlFor="itemsPerPage"
+                  className="text-sm text-green-700"
+                >
+                  Счетчиков на страницу:
                 </label>
                 <select
                   id="itemsPerPage"
-                  value={tasksPerPage}
+                  value={metersPerPage}
                   onChange={(e) => {
-                    setTasksPerPage(Number(e.target.value));
+                    setMetersPerPage(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
                 >
                   {[5, 10, 25, 50, 100].map((option) => (
                     <option key={option} value={option}>
@@ -191,12 +205,12 @@ function Home() {
             </div>
             <div className="relative w-full md:w-80">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <FaSearch className="text-gray-400" />
+                <FaSearch className="text-green-400" />
               </div>
               <input
                 type="text"
-                placeholder="Поиск задач..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Поиск счетчиков..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -204,114 +218,92 @@ function Home() {
           </div>
         </div>
 
-        {/* Tasks Table */}
-        <div className="w-full mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="w-full mx-auto bg-white rounded-xl shadow-md overflow-hidden border border-green-100">
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+              <thead className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">
-                    Объект и работ
+                    Код счетчика
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold">
-                    Тип работ
-                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">Клиент</th>
                   <th className="px-4 py-3 text-left font-semibold">Адрес</th>
-                  {/* <th className="px-4 py-3 text-left font-semibold">План</th> */}
                   <th className="px-4 py-3 text-left font-semibold">
-                    Напряжение
+                    Тип счетчика
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold">Дата</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Показания
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Дата показаний
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold">Фото</th>
-                  <th className="px-4 py-3 text-left font-semibold">
-                    Исполнитель
-                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-green-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="7" className="px-6 py-12 text-center">
                       <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
                       </div>
                     </td>
                   </tr>
-                ) : currentTasks.length === 0 ? (
+                ) : filteredMeters.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="8"
-                      className="px-6 py-8 text-center text-gray-500"
+                      colSpan="7"
+                      className="px-6 py-8 text-center text-green-600"
                     >
-                      Нет выполненных задач
+                      <div className="flex flex-col items-center justify-center">
+                        <FaLeaf className="text-4xl text-green-300 mb-2" />
+                        <p className="text-lg">Нет данных о счетчиках</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  currentTasks.map((task) => (
+                  filteredMeters.map((meter) => (
                     <tr
-                      key={task.id}
-                      className="hover:bg-blue-50 transition-colors"
+                      key={meter.meter_id_code}
+                      className="hover:bg-green-50 transition-colors"
                     >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">
-                          {task.dispatcher_name}
-                        </div>
-                        <div className="text-sm text-gray-500">{task.job}</div>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.meter_id_code}
+                      </td>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.client_name}
+                      </td>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.location_address}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                          {task.work_type}
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                          {meter.type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {task.address}
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.readings?.reading_value || 'N/A'}
                       </td>
-                      {/* <td className="px-4 py-3 text-gray-700">
-                        {task.planner_date}
-                      </td> */}
-                      <td className="px-4 py-3 text-gray-700">
-                        {task.voltage} КВ
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {dayjs(task.completion_date, 'DD-MM-YYYY HH:mm').format(
-                          'DD MMM YYYY',
-                        )}
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.readings?.reading_date
+                          ? dayjs(meter.readings.reading_date).format(
+                              'DD MMM YYYY',
+                            )
+                          : 'N/A'}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
-                          {[
-                            task.photo_url_1,
-                            task.photo_url_2,
-                            task.photo_url_3,
-                            task.photo_url_4,
-                            task.photo_url_5,
-                          ]
-                            .filter((url) => url)
-                            .map((url, index) => (
-                              <a
-                                key={index}
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-sm bg-blue-50 px-2 py-1 rounded flex items-center"
-                              >
-                                <span>{index + 1}</span>
-                              </a>
-                            ))}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <div className="flex items-center">
-                          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm mr-3">
-                            <FaUser />
-                          </div>
-                          <span className="font-medium">
-                            {' '}
-                            {task.supervisor
-                              ? getFullName(task.supervisor)
-                              : 'Non assigné'}
-                          </span>
+                          {meter.readings?.photos?.map((url, index) => (
+                            <a
+                              key={index}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-white bg-green-500 hover:bg-green-600 text-sm px-2 py-1 rounded flex items-center transition-colors"
+                            >
+                              <span>{index + 1}</span>
+                            </a>
+                          ))}
                         </div>
                       </td>
                     </tr>
@@ -321,25 +313,20 @@ function Home() {
             </table>
           </div>
 
-          {/* Pagination */}
-          {filteredTasks.length > tasksPerPage && (
-            <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-gray-200">
-              <div className="text-sm text-gray-700 mb-2 sm:mb-0">
+          {totalMeters > metersPerPage && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-green-200 bg-green-50">
+              <div className="text-sm text-green-700 mb-2 sm:mb-0">
                 Показано{' '}
                 <span className="font-medium">
-                  {Math.min(indexOfFirstTask + 1, filteredTasks.length)}
+                  {Math.min((currentPage - 1) * metersPerPage + 1, totalMeters)}
                 </span>{' '}
                 -
                 <span className="font-medium">
                   {' '}
-                  {Math.min(indexOfLastTask, filteredTasks.length)}
+                  {Math.min(currentPage * metersPerPage, totalMeters)}
                 </span>{' '}
                 из
-                <span className="font-medium">
-                  {' '}
-                  {filteredTasks.length}
-                </span>{' '}
-                задач
+                <span className="font-medium"> {totalMeters}</span> счетчиков
               </div>
 
               <div className="flex items-center space-x-2">
@@ -348,8 +335,8 @@ function Home() {
                   disabled={currentPage === 1}
                   className={`flex items-center px-3 py-1 rounded ${
                     currentPage === 1
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'text-green-300 cursor-not-allowed'
+                      : 'text-green-700 hover:bg-green-100'
                   }`}
                 >
                   <FaChevronLeft className="mr-1" /> Назад
@@ -373,8 +360,8 @@ function Home() {
                       onClick={() => paginate(pageNum)}
                       className={`w-8 h-8 rounded-full flex items-center justify-center ${
                         currentPage === pageNum
-                          ? 'bg-blue-500 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-green-500 text-white'
+                          : 'text-green-700 hover:bg-green-100'
                       }`}
                     >
                       {pageNum}
@@ -387,8 +374,8 @@ function Home() {
                   disabled={currentPage === totalPages}
                   className={`flex items-center px-3 py-1 rounded ${
                     currentPage === totalPages
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'text-green-300 cursor-not-allowed'
+                      : 'text-green-700 hover:bg-green-100'
                   }`}
                 >
                   Вперед <FaChevronRight className="ml-1" />
@@ -397,17 +384,20 @@ function Home() {
             </div>
           )}
         </div>
-      </div>
+      </main>
 
       {/* Footer */}
-      <div className="mt-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center">
-        <div className="w-full mx-auto">
-          <p>© 2025 Тех-Блок. Система управления задачами</p>
-          <p className="text-blue-200 text-sm mt-1">Версия 2.0.1</p>
+      <footer className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-4 shadow-inner">
+        <div className="w-full mx-auto text-center">
+          <p className="flex items-center justify-center">
+            <FaLeaf className="mr-2 text-green-200" />© 2025 КАСПЭНЕРГОСБЫТ.
+            СЧЕТ-УЧЕТ
+          </p>
+          <p className="text-green-200 text-sm mt-1">Версия 1.0.1</p>
         </div>
-      </div>
+      </footer>
     </div>
   );
-}
+};
 
 export default Home;

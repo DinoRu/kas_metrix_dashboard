@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   const createUser = async (userData) => {
     try {
-      const response = await api.post('/auth/signup', userData);
+      const response = await api.post('/auth/register', userData);
       return response.data;
     } catch (error) {
       console.error('User creation error:', error.response || error);
