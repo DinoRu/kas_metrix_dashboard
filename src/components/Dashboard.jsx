@@ -70,6 +70,8 @@ const Dashboard = () => {
       } catch (error) {
         console.error('Erreur lors du chargement des utilisateurs :', error);
         setUsers([]); // fallback en cas d'erreur
+      } finally {
+        setLoading(false);
       }
     };
 
