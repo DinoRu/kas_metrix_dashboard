@@ -54,7 +54,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/user/');
+        const response = await api.get('user/');
         console.log('API /user/ response:', response.data);
 
         // ✅ Toujours transformer en tableau
