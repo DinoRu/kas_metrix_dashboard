@@ -55,13 +55,21 @@ const Dashboard = () => {
     const fetchUsers = async () => {
       try {
         const response = await api.get('/user/');
-        setUsers(response.data);
+        console.log('API /user/ response:', response.data);
+
+        // ✅ Toujours transformer en tableau
+        let data = response.data;
+
+        if (Array.isArray(data)) {
+          setUsers(data);
+        } else if (data && Array.isArray(data.users)) {
+          setUsers(data.users);
+        } else {
+          setUsers([]); // fallback si mauvais format
+        }
       } catch (error) {
-        setError(
-          error.response?.data?.message || 'Ошибка загрузки пользователей',
-        );
-      } finally {
-        setLoading(false);
+        console.error('Erreur lors du chargement des utilisateurs :', error);
+        setUsers([]); // fallback en cas d'erreur
       }
     };
 
