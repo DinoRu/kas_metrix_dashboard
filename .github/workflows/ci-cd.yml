@@ -1,0 +1,32 @@
+name: CI/CD - React App to Vercel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm test -- --watchAll=false
+      - run: npm run build
+
+      # Déploiement direct via CLI (repo déjà "link")
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npx vercel --prod --confirm --token $VERCEL_TOKEN
+          else
+            npx vercel --confirm --token $VERCEL_TOKEN
+          fi
