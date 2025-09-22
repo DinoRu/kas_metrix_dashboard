@@ -52,7 +52,7 @@ const Home = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('user/');
+        const response = await api.get('/user/');
         const fetchedUsers = response.data;
         if (!Array.isArray(fetchedUsers)) {
           throw new Error('Expected an array of users');
