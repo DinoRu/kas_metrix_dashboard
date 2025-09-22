@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Add from './Add';
 import Download from './Download';
 import Delete from './Delete';
@@ -52,7 +53,7 @@ const Home = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/user/');
+        const response = await axios.get('http://45.67.59.246/api/v1/user/');
         const fetchedUsers = response.data;
         if (!Array.isArray(fetchedUsers)) {
           throw new Error('Expected an array of users');

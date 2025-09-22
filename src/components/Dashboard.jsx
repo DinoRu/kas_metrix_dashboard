@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   FaUserPlus,
   FaEdit,
@@ -54,7 +55,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/user/');
+        const response = await axios.get('http://45.67.59.246/api/v1/user/');
         console.log('API /user/ response:', response.data);
 
         // ✅ Toujours transformer en tableau
