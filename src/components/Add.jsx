@@ -44,7 +44,7 @@ const Add = () => {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      const response = await api.post('/meters/import-meters', formData, {
+      const response = await api.post('/meters/upload-file', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Custom-Header': 'value',
