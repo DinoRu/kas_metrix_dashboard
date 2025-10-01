@@ -55,21 +55,11 @@ const Dashboard = () => {
     const fetchUsers = async () => {
       try {
         const response = await api.get('/user/users');
-        console.log('API /user/ response:', response.data);
-
-        // ✅ Toujours transformer en tableau
-        let data = response.data;
-
-        if (Array.isArray(data)) {
-          setUsers(data);
-        } else if (data && Array.isArray(data.users)) {
-          setUsers(data.users);
-        } else {
-          setUsers([]); // fallback si mauvais format
-        }
+        setUsers(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
-        console.error('Erreur lors du chargement des utilisateurs :', error);
-        setUsers([]); // fallback en cas d'erreur
+        console.error('Error fetching users:', error);
+        setError(error.response?.data?.detail || 'Error fetching users');
+        setUsers([]);
       } finally {
         setLoading(false);
       }
@@ -82,7 +72,8 @@ const Dashboard = () => {
   const filteredUsers = users.filter(
     (user) =>
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ??
+        false) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
@@ -98,9 +89,11 @@ const Dashboard = () => {
       try {
         setIsLoadingAction(true);
         await api.delete(`/user/profile/${userId}`);
-        setUsers(users.filter((user) => user.uid !== userId));
+        setUsers(users.filter((user) => user.id !== userId));
       } catch (error) {
-        alert(`Ошибка: ${error.response?.data?.message || error.message}`);
+        alert(
+          `Error: ${error.response?.data?.detail || 'Failed to delete user'}`,
+        );
       } finally {
         setIsLoadingAction(false);
       }
@@ -124,28 +117,26 @@ const Dashboard = () => {
     setPasswordError('');
     setPasswordSuccess('');
     if (newPassword.length < 8) {
-      setPasswordError('Пароль должен содержать не менее 8 символов');
+      setPasswordError('Password must be at least 8 characters long');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('Пароли не совпадают');
+      setPasswordError('Passwords do not match');
       return;
     }
 
     try {
       setIsLoadingAction(true);
-      const response = await api.patch(`/user/update/${selectedUser.uid}`, {
-        password: newPassword,
+      await api.put(`/user/${selectedUser.id}/password`, {
+        user_id: selectedUser.id,
+        new_password: newPassword,
       });
-
-      if (response.data && response.data.success) {
-        setPasswordSuccess('Пароль успешно обновлен!');
-        setTimeout(() => setPasswordModalOpen(false), 1500);
-      }
+      setPasswordSuccess('Password updated successfully!');
+      setTimeout(() => setPasswordModalOpen(false), 1500);
     } catch (error) {
       setPasswordError(
-        error.response?.data?.detail || 'Ошибка при обновлении пароля',
+        error.response?.data?.detail || 'Error updating password',
       );
     } finally {
       setIsLoadingAction(false);
@@ -171,7 +162,7 @@ const Dashboard = () => {
     setSelectedUser(user);
     setUserForm({
       username: user.username,
-      full_name: user.full_name,
+      full_name: user.full_name || '',
       role: user.role,
       password: '',
     });
@@ -194,15 +185,15 @@ const Dashboard = () => {
     const errors = {};
 
     if (!userForm.username.trim()) {
-      errors.username = 'Логин обязателен';
+      errors.username = 'Username is required';
     }
 
     if (!userForm.full_name.trim()) {
-      errors.full_name = 'Полное имя обязательно';
+      errors.full_name = 'Full name is required';
     }
 
     if (createModalOpen && !userForm.password) {
-      errors.password = 'Пароль обязателен';
+      errors.password = 'Password is required';
     }
 
     setFormErrors(errors);
@@ -215,13 +206,13 @@ const Dashboard = () => {
 
     try {
       setIsLoadingAction(true);
-      const response = await api.post('/auth/register', userForm);
+      const response = await api.post('/user/register', userForm);
       const newUser = response.data;
-      if (!newUser || !newUser.username) {
+      if (!newUser || !newUser.id) {
         throw new Error('Invalid user data in response');
       }
       setUsers([...users, newUser]);
-      setFormSuccess('Пользователь успешно создан!');
+      setFormSuccess('User created successfully!');
       setTimeout(() => {
         setCreateModalOpen(false);
         setFormSuccess('');
@@ -229,10 +220,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Create User Error:', error);
       setFormErrors({
-        general:
-          error.message ||
-          error.response?.data?.detail ||
-          'Ошибка создания пользователя',
+        general: error.response?.data?.detail || 'Error creating user',
       });
     } finally {
       setIsLoadingAction(false);
@@ -245,24 +233,23 @@ const Dashboard = () => {
 
     try {
       setIsLoadingAction(true);
-      const response = await api.patch(`/user/update/${selectedUser.uid}`, {
+      const response = await api.put(`/user/update/${selectedUser.id}`, {
         username: userForm.username,
         full_name: userForm.full_name,
         role: userForm.role,
       });
       const updatedUsers = users.map((user) =>
-        user.uid === selectedUser.uid ? { ...user, ...response.data } : user,
+        user.id === selectedUser.id ? { ...user, ...response.data } : user,
       );
       setUsers(updatedUsers);
-      setFormSuccess('Данные пользователя обновлены!');
+      setFormSuccess('User data updated successfully!');
       setTimeout(() => {
         setEditModalOpen(false);
         setFormSuccess('');
       }, 1500);
     } catch (error) {
       setFormErrors({
-        general:
-          error.response?.data?.detail || 'Ошибка обновления пользователя',
+        general: error.response?.data?.detail || 'Error updating user',
       });
     } finally {
       setIsLoadingAction(false);
@@ -295,7 +282,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-green-50">
         <div className="bg-red-50 p-6 rounded-lg text-red-700 max-w-md text-center border border-red-200">
-          <p className="font-medium">Ошибка загрузки</p>
+          <p className="font-medium">Error loading</p>
           <p className="mt-2 text-sm">{error}</p>
         </div>
       </div>
@@ -393,7 +380,7 @@ const Dashboard = () => {
                   ) : (
                     currentUsers.map((user) => (
                       <tr
-                        key={user.uid}
+                        key={user.id}
                         className="hover:bg-green-50 transition-colors"
                       >
                         <td className="px-6 py-4 font-medium text-green-800">
@@ -407,13 +394,7 @@ const Dashboard = () => {
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
                               user.role === 'admin'
                                 ? 'bg-red-100 text-red-800'
-                                : user.role === 'user'
-                                  ? 'bg-green-100 text-green-800'
-                                  : user.role === 'work'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : user.role === 'controller'
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-blue-100 text-blue-800'
+                                : 'bg-emerald-100 text-emerald-800'
                             }`}
                           >
                             {translateRole(user.role)}
@@ -444,7 +425,7 @@ const Dashboard = () => {
                               <FaEdit />
                             </button>
                             <button
-                              onClick={() => handleDelete(user.uid)}
+                              onClick={() => handleDelete(user.id)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                               title="Удалить"
                               aria-label={`Удалить пользователя ${user.username}`}
@@ -593,7 +574,7 @@ const Dashboard = () => {
                     </button>
                   </div>
                   <p className="text-xs text-green-600 mt-1">
-                    Минимум 8 символов
+                    Minimum 8 characters
                   </p>
                 </div>
                 <div>
@@ -725,7 +706,7 @@ const Dashboard = () => {
                 </div>
               )}
 
-              <form className="space-y-4">
+              <div className="space-y-4">
                 <div className="relative">
                   <FaUser className="absolute top-1/2 left-4 transform -translate-y-1/2 text-green-400" />
                   <input
@@ -843,7 +824,7 @@ const Dashboard = () => {
                     Создать
                   </button>
                 </div>
-              </form>
+              </div>
             </>
           )}
         </div>
@@ -899,7 +880,7 @@ const Dashboard = () => {
                 </div>
               )}
 
-              <form className="space-y-4">
+              <div className="space-y-4">
                 <div className="relative">
                   <FaUser className="absolute top-1/2 left-4 transform -translate-y-1/2 text-green-400" />
                   <input
@@ -993,7 +974,7 @@ const Dashboard = () => {
                     Сохранить
                   </button>
                 </div>
-              </form>
+              </div>
             </>
           )}
         </div>
