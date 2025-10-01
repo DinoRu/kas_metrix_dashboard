@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Add from './Add';
-import Download from './Download';
-import Delete from './Delete';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/ru';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { useEffect, useState } from 'react';
 import {
-  FaUserShield,
-  FaSignOutAlt,
-  FaSearch,
   FaChevronLeft,
   FaChevronRight,
   FaLeaf,
+  FaSearch,
+  FaSignOutAlt,
+  FaUserShield,
 } from 'react-icons/fa';
-import { Button } from './Button';
-import { useAuth } from '../context/authContext';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useAuth } from '../context/authContext';
+import Add from './Add';
+import { Button } from './Button';
+import Delete from './Delete';
+import Download from './Download';
 
 dayjs.extend(customParseFormat);
 dayjs.locale('ru');
@@ -224,10 +224,10 @@ const Home = () => {
                   <th className="px-4 py-3 text-left font-semibold">
                     Код счетчика
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold">Клиент</th>
+                  <th className="px-4 py-3 text-left font-semibold">Наименование объекта сети</th>
                   <th className="px-4 py-3 text-left font-semibold">Адрес</th>
                   <th className="px-4 py-3 text-left font-semibold">
-                    Тип счетчика
+                    Исполнитель
                   </th>
                   <th className="px-4 py-3 text-left font-semibold">
                     Показания
@@ -276,7 +276,7 @@ const Home = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                          {meter.type}
+                          {meter.readings ? getFullName(meter.readings.user_id) : 'N/A'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-green-700">
@@ -285,8 +285,8 @@ const Home = () => {
                       <td className="px-4 py-3 text-green-700">
                         {meter.readings?.reading_date
                           ? dayjs(meter.readings.reading_date).format(
-                              'DD MMM YYYY',
-                            )
+                            'DD MMM YYYY',
+                          )
                           : 'N/A'}
                       </td>
                       <td className="px-4 py-3">
@@ -331,11 +331,10 @@ const Home = () => {
                 <button
                   onClick={prevPage}
                   disabled={currentPage === 1}
-                  className={`flex items-center px-3 py-1 rounded ${
-                    currentPage === 1
-                      ? 'text-green-300 cursor-not-allowed'
-                      : 'text-green-700 hover:bg-green-100'
-                  }`}
+                  className={`flex items-center px-3 py-1 rounded ${currentPage === 1
+                    ? 'text-green-300 cursor-not-allowed'
+                    : 'text-green-700 hover:bg-green-100'
+                    }`}
                 >
                   <FaChevronLeft className="mr-1" /> Назад
                 </button>
@@ -356,11 +355,10 @@ const Home = () => {
                     <button
                       key={pageNum}
                       onClick={() => paginate(pageNum)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        currentPage === pageNum
-                          ? 'bg-green-500 text-white'
-                          : 'text-green-700 hover:bg-green-100'
-                      }`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${currentPage === pageNum
+                        ? 'bg-green-500 text-white'
+                        : 'text-green-700 hover:bg-green-100'
+                        }`}
                     >
                       {pageNum}
                     </button>
@@ -370,11 +368,10 @@ const Home = () => {
                 <button
                   onClick={nextPage}
                   disabled={currentPage === totalPages}
-                  className={`flex items-center px-3 py-1 rounded ${
-                    currentPage === totalPages
-                      ? 'text-green-300 cursor-not-allowed'
-                      : 'text-green-700 hover:bg-green-100'
-                  }`}
+                  className={`flex items-center px-3 py-1 rounded ${currentPage === totalPages
+                    ? 'text-green-300 cursor-not-allowed'
+                    : 'text-green-700 hover:bg-green-100'
+                    }`}
                 >
                   Вперед <FaChevronRight className="ml-1" />
                 </button>
