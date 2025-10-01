@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   FaEdit,
   FaEye,
@@ -25,9 +25,6 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 8;
-
-  // Ref for search input
-  const searchInputRef = useRef(null);
 
   // Modal states
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
@@ -57,7 +54,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/users');
+        const response = await api.get('/user/users');
         setUsers(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -103,13 +100,6 @@ const Dashboard = () => {
     }
   };
 
-  // Function to blur search input
-  const blurSearchInput = () => {
-    if (searchInputRef.current) {
-      searchInputRef.current.blur();
-    }
-  };
-
   // Open password change modal
   const openPasswordModal = (user) => {
     setSelectedUser(user);
@@ -120,8 +110,6 @@ const Dashboard = () => {
     setShowPassword(false);
     setShowConfirmPassword(false);
     setPasswordModalOpen(true);
-    // Blur search input to deactivate search
-    blurSearchInput();
   };
 
   // Change user password
@@ -167,8 +155,6 @@ const Dashboard = () => {
     setFormSuccess('');
     setShowPassword(false);
     setCreateModalOpen(true);
-    // Blur search input to deactivate search
-    blurSearchInput();
   };
 
   // Open edit modal
@@ -183,8 +169,6 @@ const Dashboard = () => {
     setFormErrors({});
     setFormSuccess('');
     setEditModalOpen(true);
-    // Blur search input to deactivate search
-    blurSearchInput();
   };
 
   // Handle form input changes
@@ -342,7 +326,6 @@ const Dashboard = () => {
               <div className="relative w-full md:w-64">
                 <FaSearch className="absolute top-1/2 left-4 transform -translate-y-1/2 text-green-400" />
                 <input
-                  ref={searchInputRef}
                   type="text"
                   placeholder="Поиск пользователей..."
                   className="w-full pl-12 pr-4 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all text-green-800"
@@ -409,8 +392,8 @@ const Dashboard = () => {
                         <td className="px-6 py-4">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-emerald-100 text-emerald-800'
                               }`}
                           >
                             {translateRole(user.role)}
@@ -483,8 +466,8 @@ const Dashboard = () => {
                         key={pageNum}
                         onClick={() => paginate(pageNum)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${currentPage === pageNum
-                          ? 'bg-emerald-500 text-white'
-                          : 'text-green-700 hover:bg-green-100'
+                            ? 'bg-emerald-500 text-white'
+                            : 'text-green-700 hover:bg-green-100'
                           }`}
                       >
                         {pageNum}
@@ -633,8 +616,8 @@ const Dashboard = () => {
                 <button
                   onClick={changeUserPassword}
                   className={`px-4 py-2 flex items-center gap-2 rounded-lg transition-all ${isLoadingAction
-                    ? 'bg-emerald-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
+                      ? 'bg-emerald-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
                     }`}
                   disabled={isLoadingAction}
                 >
@@ -805,8 +788,8 @@ const Dashboard = () => {
                     type="button"
                     onClick={createNewUser}
                     className={`px-4 py-2 flex items-center gap-2 rounded-lg transition-all ${isLoadingAction
-                      ? 'bg-emerald-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
+                        ? 'bg-emerald-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
                       }`}
                     disabled={isLoadingAction}
                   >
@@ -954,8 +937,8 @@ const Dashboard = () => {
                     type="button"
                     onClick={updateUser}
                     className={`px-4 py-2 flex items-center gap-2 rounded-lg transition-all ${isLoadingAction
-                      ? 'bg-emerald-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
+                        ? 'bg-emerald-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
                       }`}
                     disabled={isLoadingAction}
                   >
