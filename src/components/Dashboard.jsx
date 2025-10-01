@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FaEdit,
   FaEye,
@@ -572,6 +572,7 @@ const Dashboard = () => {
                     <input
                       id="new-password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete='new-password'
                       className="w-full pl-12 pr-10 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all text-green-800"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
@@ -601,6 +602,7 @@ const Dashboard = () => {
                     <input
                       id="confirm-password"
                       type={showConfirmPassword ? 'text' : 'password'}
+                      autoComplete='new-password'
                       className="w-full pl-12 pr-10 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all text-green-800"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
