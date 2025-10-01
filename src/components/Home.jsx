@@ -69,9 +69,9 @@ const Home = () => {
     }
   }, [user, currentPage, metersPerPage]);
 
-  const getFullName = (username) => {
-    const user = users.find((u) => u.username === username);
-    return user ? user.full_name : username;
+  const getFullName = (userId) => {
+    const user = users.find((u) => u.id === userId);
+    return user ? user.full_name || user.username : "N/A";
   };
 
   useEffect(() => {
@@ -131,12 +131,12 @@ const Home = () => {
               <h1 className="text-2xl md:text-3xl font-bold">КАСПЭНЕРГОСБЫТ</h1>
               <p className="text-green-100 flex items-center">
                 {user
-                  ? `Привет, ${getFullName(user.username)}`
+                  ? `Привет, ${getFullName(user.id)}`
                   : 'Система управления счетчиками'}
                 <FaLeaf className="ml-2 text-green-200" />
               </p>
             </div>
-          </div>
+          </div>t
 
           <div className="flex gap-3">
             {hasPermission(['admin']) && (
