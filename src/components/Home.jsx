@@ -1,22 +1,24 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Add from './Add';
+import Download from './Download';
+import Delete from './Delete';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { useEffect, useState } from 'react';
+import 'dayjs/locale/ru';
 import {
+  FaUserShield,
+  FaSignOutAlt,
+  FaSearch,
   FaChevronLeft,
   FaChevronRight,
   FaLeaf,
-  FaSearch,
-  FaSignOutAlt,
-  FaUserShield,
+  FaCalendarAlt,
+  FaTimes,
 } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import api from '../api';
-import { useAuth } from '../context/authContext';
-import Add from './Add';
 import { Button } from './Button';
-import Delete from './Delete';
-import Download from './Download';
+import { useAuth } from '../context/authContext';
+import api from '../api';
 
 dayjs.extend(customParseFormat);
 dayjs.locale('ru');
@@ -31,6 +33,8 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [metersPerPage, setMetersPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchMetersWithReadings = async () => {
@@ -69,16 +73,17 @@ const Home = () => {
     }
   }, [user, currentPage, metersPerPage]);
 
-  const getFullName = (userId) => {
-    const user = users.find((u) => u.id === userId);
-    return user ? user.full_name || user.username : "N/A";
+  const getFullName = (username) => {
+    const user = users.find((u) => u.username === username);
+    return user ? user.full_name : username;
   };
 
   useEffect(() => {
-    if (searchTerm === '') {
-      setFilteredMeters(meters);
-    } else {
-      const filtered = meters.filter(
+    let filtered = meters;
+
+    // Filtre de recherche textuelle
+    if (searchTerm !== '') {
+      filtered = filtered.filter(
         (meter) =>
           meter.meter_id_code
             ?.toLowerCase()
@@ -91,9 +96,32 @@ const Home = () => {
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()),
       );
-      setFilteredMeters(filtered);
     }
-  }, [searchTerm, meters]);
+
+    // Filtre de date
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter((meter) => {
+        if (!meter.readings?.reading_date) return false;
+
+        const readingDate = dayjs(meter.readings.reading_date);
+
+        if (dateFrom && dateTo) {
+          return (
+            readingDate.isAfter(dayjs(dateFrom).subtract(1, 'day')) &&
+            readingDate.isBefore(dayjs(dateTo).add(1, 'day'))
+          );
+        } else if (dateFrom) {
+          return readingDate.isAfter(dayjs(dateFrom).subtract(1, 'day'));
+        } else if (dateTo) {
+          return readingDate.isBefore(dayjs(dateTo).add(1, 'day'));
+        }
+
+        return true;
+      });
+    }
+
+    setFilteredMeters(filtered);
+  }, [searchTerm, dateFrom, dateTo, meters]);
 
   const totalPages = Math.ceil(totalMeters / metersPerPage);
 
@@ -112,9 +140,18 @@ const Home = () => {
   };
 
   const handleDeleteSuccess = () => {
-    setCurrentPage(1); // Reset to first page
-    fetchMetersWithReadings(); // Refresh meters
+    setCurrentPage(1);
+    fetchMetersWithReadings();
   };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const hasActiveFilters =
+    searchTerm !== '' || dateFrom !== '' || dateTo !== '';
 
   return (
     <div className="min-h-screen flex flex-col bg-green-50">
@@ -131,12 +168,12 @@ const Home = () => {
               <h1 className="text-2xl md:text-3xl font-bold">КАСПЭНЕРГОСБЫТ</h1>
               <p className="text-green-100 flex items-center">
                 {user
-                  ? `Привет, ${getFullName(user.id)}`
+                  ? `Привет, ${getFullName(user.username)}`
                   : 'Система управления счетчиками'}
                 <FaLeaf className="ml-2 text-green-200" />
               </p>
             </div>
-          </div>t
+          </div>
 
           <div className="flex gap-3">
             {hasPermission(['admin']) && (
@@ -164,55 +201,132 @@ const Home = () => {
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8">
         <div className="w-full mx-auto bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 border border-green-100">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-wrap gap-3">
-              {hasPermission(['admin', 'user']) && (
-                <Add
-                  onUnauthorized={() =>
-                    alert('У вас нет разрешения на загрузку')
-                  }
+          <div className="flex flex-col gap-4">
+            {/* Première ligne : Actions et items par page */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex flex-wrap gap-3">
+                {hasPermission(['admin', 'user']) && (
+                  <Add
+                    onUnauthorized={() =>
+                      alert('У вас нет разрешения на загрузку')
+                    }
+                  />
+                )}
+                <Download />
+                {hasPermission(['admin']) && (
+                  <Delete onDeleteSuccess={handleDeleteSuccess} />
+                )}
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="itemsPerPage"
+                    className="text-sm text-green-700"
+                  >
+                    Счетчиков на страницу:
+                  </label>
+                  <select
+                    id="itemsPerPage"
+                    value={metersPerPage}
+                    onChange={(e) => {
+                      setMetersPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
+                  >
+                    {[5, 10, 25, 50, 100].map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Deuxième ligne : Filtres */}
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Recherche textuelle */}
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <FaSearch className="text-green-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Поиск счетчиков..."
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              )}
-              <Download />
-              {hasPermission(['admin']) && (
-                <Delete onDeleteSuccess={handleDeleteSuccess} />
-              )}
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="itemsPerPage"
-                  className="text-sm text-green-700"
-                >
-                  Счетчиков на страницу:
-                </label>
-                <select
-                  id="itemsPerPage"
-                  value={metersPerPage}
-                  onChange={(e) => {
-                    setMetersPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
-                >
-                  {[5, 10, 25, 50, 100].map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+              </div>
+
+              {/* Filtre de date */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center">
+                <div className="flex items-center gap-2">
+                  <FaCalendarAlt className="text-green-500" />
+                  <label
+                    htmlFor="dateFrom"
+                    className="text-sm text-green-700 whitespace-nowrap"
+                  >
+                    Дата с:
+                  </label>
+                  <input
+                    id="dateFrom"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="dateTo"
+                    className="text-sm text-green-700 whitespace-nowrap"
+                  >
+                    до:
+                  </label>
+                  <input
+                    id="dateTo"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
+                  />
+                </div>
+
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="bg-red-100 text-red-700 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-red-200 transition-colors border border-red-300"
+                    title="Очистить фильтры"
+                  >
+                    <FaTimes />
+                    <span className="text-sm">Очистить</span>
+                  </button>
+                )}
               </div>
             </div>
-            <div className="relative w-full md:w-80">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <FaSearch className="text-green-400" />
+
+            {/* Indicateur de filtres actifs */}
+            {hasActiveFilters && (
+              <div className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                Активные фильтры:
+                {searchTerm && (
+                  <span className="ml-2 font-medium">
+                    Поиск: &quot;{searchTerm}&quot;
+                  </span>
+                )}
+                {dateFrom && (
+                  <span className="ml-2 font-medium">
+                    С: {dayjs(dateFrom).format('DD.MM.YYYY')}
+                  </span>
+                )}
+                {dateTo && (
+                  <span className="ml-2 font-medium">
+                    До: {dayjs(dateTo).format('DD.MM.YYYY')}
+                  </span>
+                )}
               </div>
-              <input
-                type="text"
-                placeholder="Поиск счетчиков..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            )}
           </div>
         </div>
 
@@ -224,10 +338,10 @@ const Home = () => {
                   <th className="px-4 py-3 text-left font-semibold">
                     Код счетчика
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold">Наименование объекта сети</th>
+                  <th className="px-4 py-3 text-left font-semibold">Клиент</th>
                   <th className="px-4 py-3 text-left font-semibold">Адрес</th>
                   <th className="px-4 py-3 text-left font-semibold">
-                    Исполнитель
+                    Тип счетчика
                   </th>
                   <th className="px-4 py-3 text-left font-semibold">
                     Показания
@@ -255,7 +369,11 @@ const Home = () => {
                     >
                       <div className="flex flex-col items-center justify-center">
                         <FaLeaf className="text-4xl text-green-300 mb-2" />
-                        <p className="text-lg">Нет данных о счетчиках</p>
+                        <p className="text-lg">
+                          {hasActiveFilters
+                            ? 'Нет результатов для выбранных фильтров'
+                            : 'Нет данных о счетчиках'}
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -276,7 +394,7 @@ const Home = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                          {meter.readings ? getFullName(meter.readings.user_id) : 'N/A'}
+                          {meter.type}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-green-700">
@@ -285,8 +403,8 @@ const Home = () => {
                       <td className="px-4 py-3 text-green-700">
                         {meter.readings?.reading_date
                           ? dayjs(meter.readings.reading_date).format(
-                            'DD MMM YYYY',
-                          )
+                              'DD MMM YYYY',
+                            )
                           : 'N/A'}
                       </td>
                       <td className="px-4 py-3">
@@ -331,10 +449,11 @@ const Home = () => {
                 <button
                   onClick={prevPage}
                   disabled={currentPage === 1}
-                  className={`flex items-center px-3 py-1 rounded ${currentPage === 1
-                    ? 'text-green-300 cursor-not-allowed'
-                    : 'text-green-700 hover:bg-green-100'
-                    }`}
+                  className={`flex items-center px-3 py-1 rounded ${
+                    currentPage === 1
+                      ? 'text-green-300 cursor-not-allowed'
+                      : 'text-green-700 hover:bg-green-100'
+                  }`}
                 >
                   <FaChevronLeft className="mr-1" /> Назад
                 </button>
@@ -355,10 +474,11 @@ const Home = () => {
                     <button
                       key={pageNum}
                       onClick={() => paginate(pageNum)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${currentPage === pageNum
-                        ? 'bg-green-500 text-white'
-                        : 'text-green-700 hover:bg-green-100'
-                        }`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? 'bg-green-500 text-white'
+                          : 'text-green-700 hover:bg-green-100'
+                      }`}
                     >
                       {pageNum}
                     </button>
@@ -368,10 +488,11 @@ const Home = () => {
                 <button
                   onClick={nextPage}
                   disabled={currentPage === totalPages}
-                  className={`flex items-center px-3 py-1 rounded ${currentPage === totalPages
-                    ? 'text-green-300 cursor-not-allowed'
-                    : 'text-green-700 hover:bg-green-100'
-                    }`}
+                  className={`flex items-center px-3 py-1 rounded ${
+                    currentPage === totalPages
+                      ? 'text-green-300 cursor-not-allowed'
+                      : 'text-green-700 hover:bg-green-100'
+                  }`}
                 >
                   Вперед <FaChevronRight className="ml-1" />
                 </button>
