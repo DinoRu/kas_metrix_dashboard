@@ -43,9 +43,21 @@ const Home = () => {
       const response = await api.get(
         `/meters/with-readings?skip=${(currentPage - 1) * metersPerPage}&limit=${metersPerPage}`,
       );
-      setMeters(response.data.data || []);
+
+      // Trier les compteurs par date de lecture (du plus récent au plus ancien)
+      const sortedMeters = (response.data.data || []).sort((a, b) => {
+        const dateA = a.readings?.reading_date
+          ? dayjs(a.readings.reading_date)
+          : dayjs(0);
+        const dateB = b.readings?.reading_date
+          ? dayjs(b.readings.reading_date)
+          : dayjs(0);
+        return dateB - dateA; // Ordre décroissant (plus récent d'abord)
+      });
+
+      setMeters(sortedMeters);
       setTotalMeters(response.data.total || 0);
-      setFilteredMeters(response.data.data || []);
+      setFilteredMeters(sortedMeters);
     } catch (error) {
       console.error('Ошибка при получении счетчиков:', error);
     } finally {
@@ -79,7 +91,7 @@ const Home = () => {
   };
 
   useEffect(() => {
-    let filtered = meters;
+    let filtered = [...meters]; // Créer une copie pour ne pas modifier l'original
 
     // Filtre de recherche textuelle
     if (searchTerm !== '') {
@@ -119,6 +131,17 @@ const Home = () => {
         return true;
       });
     }
+
+    // Trier les résultats filtrés par date (du plus récent au plus ancien)
+    filtered.sort((a, b) => {
+      const dateA = a.readings?.reading_date
+        ? dayjs(a.readings.reading_date)
+        : dayjs(0);
+      const dateB = b.readings?.reading_date
+        ? dayjs(b.readings.reading_date)
+        : dayjs(0);
+      return dateB - dateA; // Ordre décroissant
+    });
 
     setFilteredMeters(filtered);
   }, [searchTerm, dateFrom, dateTo, meters]);
