@@ -28,7 +28,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [meters, setMeters] = useState([]);
-  const [totalMeters, setTotalMeters] = useState(0);
+  const [totalMeters, setTotalMeters] = useState(0); // total client (toutes les lignes)
   const [filteredMeters, setFilteredMeters] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [metersPerPage, setMetersPerPage] = useState(5);
@@ -37,27 +37,22 @@ const Home = () => {
   const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const fetchMetersWithReadings = async () => {
+  // FETCH ALL (Option B): on récupère tout puis on filtre/tri/page côté client
+  const fetchAllMeters = async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/meters/with-readings?skip=${(currentPage - 1) * metersPerPage}&limit=${metersPerPage}`,
-      );
-
-      // Trier les compteurs par date de lecture (du plus récent au plus ancien)
-      const sortedMeters = (response.data.data || []).sort((a, b) => {
-        const dateA = a.readings?.reading_date
-          ? dayjs(a.readings.reading_date)
-          : dayjs(0);
-        const dateB = b.readings?.reading_date
-          ? dayjs(b.readings.reading_date)
-          : dayjs(0);
-        return dateB - dateA; // Ordre décroissant (plus récent d'abord)
+      const { data } = await api.get('/meters/with-readings', {
+        params: {
+          skip: 0,
+          limit: 100000,
+          order_by: 'reading_date',
+          order_dir: 'desc',
+        },
       });
-
-      setMeters(sortedMeters);
-      setTotalMeters(response.data.total || 0);
-      setFilteredMeters(sortedMeters);
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      setMeters(rows);
+      setTotalMeters(rows.length);
+      setFilteredMeters(rows); // filtrage affiné dans l'useEffect dédié
     } catch (error) {
       console.error('Ошибка при получении счетчиков:', error);
     } finally {
@@ -65,6 +60,7 @@ const Home = () => {
     }
   };
 
+  // Charger utilisateurs + toutes les mesures une seule fois
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -80,41 +76,37 @@ const Home = () => {
     };
 
     if (user) {
-      fetchMetersWithReadings();
+      fetchAllMeters();
       fetchUsers();
     }
-  }, [user, currentPage, metersPerPage]);
+  }, [user]);
 
   const getFullName = (username) => {
-    const user = users.find((u) => u.username === username);
-    return user ? user.full_name : username;
+    const u = users.find((u) => u.username === username);
+    return u ? u.full_name : username;
+    // fallback sur username si full_name non connu
   };
 
+  // Filtrage + tri côté client
   useEffect(() => {
-    let filtered = [...meters]; // Créer une copie pour ne pas modifier l'original
+    let filtered = [...meters];
 
-    // Filtre de recherche textuelle
+    // Filtre recherche texte
     if (searchTerm !== '') {
+      const q = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (meter) =>
-          meter.meter_id_code
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          meter.location_address
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          meter.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          meter.readings?.notes
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()),
+          meter.meter_id_code?.toLowerCase().includes(q) ||
+          meter.location_address?.toLowerCase().includes(q) ||
+          meter.client_name?.toLowerCase().includes(q) ||
+          meter.readings?.notes?.toLowerCase().includes(q),
       );
     }
 
-    // Filtre de date
+    // Filtre de dates
     if (dateFrom || dateTo) {
       filtered = filtered.filter((meter) => {
         if (!meter.readings?.reading_date) return false;
-
         const readingDate = dayjs(meter.readings.reading_date);
 
         if (dateFrom && dateTo) {
@@ -127,44 +119,47 @@ const Home = () => {
         } else if (dateTo) {
           return readingDate.isBefore(dayjs(dateTo).add(1, 'day'));
         }
-
         return true;
       });
     }
 
-    // Trier les résultats filtrés par date (du plus récent au plus ancien)
+    // Tri du plus récent au plus ancien
     filtered.sort((a, b) => {
-      const dateA = a.readings?.reading_date
-        ? dayjs(a.readings.reading_date)
-        : dayjs(0);
-      const dateB = b.readings?.reading_date
-        ? dayjs(b.readings.reading_date)
-        : dayjs(0);
-      return dateB - dateA; // Ordre décroissant
+      const aMs = a.readings?.reading_date
+        ? dayjs(a.readings.reading_date).valueOf()
+        : 0;
+      const bMs = b.readings?.reading_date
+        ? dayjs(b.readings.reading_date).valueOf()
+        : 0;
+      return bMs - aMs;
     });
 
     setFilteredMeters(filtered);
   }, [searchTerm, dateFrom, dateTo, meters]);
 
-  const totalPages = Math.ceil(totalMeters / metersPerPage);
+  // Quand les filtres changent (ou la taille de page), revenir page 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo, metersPerPage]);
+
+  // Pagination après filtre
+  const totalCount = filteredMeters.length; // total filtré
+  const totalPages = Math.ceil(totalCount / metersPerPage);
+  const pageStart = (currentPage - 1) * metersPerPage;
+  const pageEnd = pageStart + metersPerPage;
+  const pageRows = filteredMeters.slice(pageStart, pageEnd);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
   const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
-
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
   const handleDeleteSuccess = () => {
     setCurrentPage(1);
-    fetchMetersWithReadings();
+    fetchAllMeters(); // recharger toutes les données côté client
   };
 
   const clearFilters = () => {
@@ -239,6 +234,7 @@ const Home = () => {
                 {hasPermission(['admin']) && (
                   <Delete onDeleteSuccess={handleDeleteSuccess} />
                 )}
+
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="itemsPerPage"
@@ -401,7 +397,7 @@ const Home = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredMeters.map((meter) => (
+                  pageRows.map((meter) => (
                     <tr
                       key={meter.meter_id_code}
                       className="hover:bg-green-50 transition-colors"
@@ -452,20 +448,18 @@ const Home = () => {
             </table>
           </div>
 
-          {totalMeters > metersPerPage && (
+          {totalCount > metersPerPage && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-green-200 bg-green-50">
               <div className="text-sm text-green-700 mb-2 sm:mb-0">
                 Показано{' '}
                 <span className="font-medium">
-                  {Math.min((currentPage - 1) * metersPerPage + 1, totalMeters)}
+                  {Math.min((currentPage - 1) * metersPerPage + 1, totalCount)}
                 </span>{' '}
-                -
+                -{' '}
                 <span className="font-medium">
-                  {' '}
-                  {Math.min(currentPage * metersPerPage, totalMeters)}
+                  {Math.min(currentPage * metersPerPage, totalCount)}
                 </span>{' '}
-                из
-                <span className="font-medium"> {totalMeters}</span> счетчиков
+                из <span className="font-medium">{totalCount}</span> счетчиков
               </div>
 
               <div className="flex items-center space-x-2">
