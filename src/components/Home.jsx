@@ -342,10 +342,9 @@ const Home = () => {
               </div>
             </div>
           </div>
-
           {/* Zone de filtres expansible */}
           {showFilters && (
-            <div className="border-t border-gray-200 pt-6 space-y-4">
+            <div className="border-t border-gray-200 pt-6 space-y-4 animate-fadeIn">
               {/* Recherche */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -353,53 +352,14 @@ const Home = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Поиск по коду, адресу, клиенту..."
+                  placeholder="Rechercher par code, adresse, client..."
                   className="w-full pl-11 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-          )}
-
-          {/* Indicateur de filtres actifs */}
-          {hasActiveFilters && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {searchTerm && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                  Поиск: &quot;{searchTerm}&quot;
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="hover:bg-green-200 rounded-full p-0.5"
-                  >
-                    <FaTimes className="text-xs" />
-                  </button>
-                </span>
-              )}
-              {dateFrom && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                  С: {dayjs(dateFrom).format('DD.MM.YYYY')}
-                  <button
-                    onClick={() => setDateFrom('')}
-                    className="hover:bg-green-200 rounded-full p-0.5"
-                  >
-                    <FaTimes className="text-xs" />
-                  </button>
-                </span>
-              )}
-              {dateTo && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                  До: {dayjs(dateTo).format('DD.MM.YYYY')}
-                  <button
-                    onClick={() => setDateTo('')}
-                    className="hover:bg-green-200 rounded-full p-0.5"
-                  >
-                    <FaTimes className="text-xs" />
-                  </button>
-                </span>
-              )}
-            </div>
-          )}
+          )}{' '}
         </div>
 
         {/* Table des compteurs */}
@@ -409,25 +369,25 @@ const Home = () => {
               <thead className="bg-gradient-to-r from-green-600 to-emerald-700">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Код счетчика
+                    Code
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Клиент
+                    Client
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Адрес
+                    Adresse
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Тип
+                    Type
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Показания
+                    Lecture
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Дата показаний
+                    Date
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Фото
+                    Photos
                   </th>
                 </tr>
               </thead>
@@ -438,7 +398,7 @@ const Home = () => {
                       <div className="flex flex-col items-center justify-center">
                         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mb-4"></div>
                         <p className="text-gray-600 font-medium">
-                          Загрузка данных...
+                          Chargement des données...
                         </p>
                       </div>
                     </td>
@@ -451,12 +411,14 @@ const Home = () => {
                           <FaLeaf className="text-6xl text-green-400" />
                         </div>
                         <p className="text-xl font-semibold text-gray-700 mb-2">
-                          {hasActiveFilters ? 'Нет результатов' : 'Нет данных'}
+                          {hasActiveFilters
+                            ? 'Aucun résultat'
+                            : 'Aucune donnée'}
                         </p>
                         <p className="text-gray-500">
                           {hasActiveFilters
-                            ? 'Попробуйте изменить критерии поиска'
-                            : 'Нет счетчиков в системе'}
+                            ? 'Essayez de modifier vos critères de recherche'
+                            : 'Aucun compteur trouvé dans le système'}
                         </p>
                       </div>
                     </td>
@@ -534,22 +496,22 @@ const Home = () => {
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
-                  Показано{' '}
+                  Affichage de{' '}
                   <span className="font-bold text-green-600">
                     {Math.min(
                       (currentPage - 1) * metersPerPage + 1,
                       totalMeters,
                     )}
                   </span>{' '}
-                  -{' '}
+                  à{' '}
                   <span className="font-bold text-green-600">
                     {Math.min(currentPage * metersPerPage, totalMeters)}
                   </span>{' '}
-                  из{' '}
+                  sur{' '}
                   <span className="font-bold text-green-600">
                     {totalMeters}
                   </span>{' '}
-                  счетчиков
+                  résultats
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -563,7 +525,7 @@ const Home = () => {
                     }`}
                   >
                     <FaChevronLeft className="text-xs" />
-                    <span>Назад</span>
+                    <span>Précédent</span>
                   </button>
 
                   <div className="flex gap-1">
@@ -604,7 +566,7 @@ const Home = () => {
                         : 'text-green-700 bg-white hover:bg-green-50 shadow-sm'
                     }`}
                   >
-                    <span>Вперед</span>
+                    <span>Suivant</span>
                     <FaChevronRight className="text-xs" />
                   </button>
                 </div>
@@ -626,7 +588,7 @@ const Home = () => {
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-                Версия 1.0.1
+                Version 1.0.1
               </span>
             </div>
           </div>
