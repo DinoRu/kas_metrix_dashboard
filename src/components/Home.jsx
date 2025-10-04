@@ -15,9 +15,6 @@ import {
   FaLeaf,
   FaCalendarAlt,
   FaTimes,
-  FaChartLine,
-  FaFilter,
-  FaImage,
 } from 'react-icons/fa';
 import { Button } from './Button';
 import { useAuth } from '../context/authContext';
@@ -39,7 +36,6 @@ const Home = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
 
   const fetchMetersWithReadings = async () => {
     try {
@@ -48,6 +44,7 @@ const Home = () => {
         `/meters/with-readings?skip=${(currentPage - 1) * metersPerPage}&limit=${metersPerPage}`,
       );
 
+      // Trier les compteurs par date de lecture (du plus récent au plus ancien)
       const sortedMeters = (response.data.data || []).sort((a, b) => {
         const dateA = a.readings?.reading_date
           ? dayjs(a.readings.reading_date)
@@ -55,7 +52,7 @@ const Home = () => {
         const dateB = b.readings?.reading_date
           ? dayjs(b.readings.reading_date)
           : dayjs(0);
-        return dateB - dateA;
+        return dateB - dateA; // Ordre décroissant (plus récent d'abord)
       });
 
       setMeters(sortedMeters);
@@ -94,8 +91,9 @@ const Home = () => {
   };
 
   useEffect(() => {
-    let filtered = [...meters];
+    let filtered = [...meters]; // Créer une copie pour ne pas modifier l'original
 
+    // Filtre de recherche textuelle
     if (searchTerm !== '') {
       filtered = filtered.filter(
         (meter) =>
@@ -112,6 +110,7 @@ const Home = () => {
       );
     }
 
+    // Filtre de date
     if (dateFrom || dateTo) {
       filtered = filtered.filter((meter) => {
         if (!meter.readings?.reading_date) return false;
@@ -133,6 +132,7 @@ const Home = () => {
       });
     }
 
+    // Trier les résultats filtrés par date (du plus récent au plus ancien)
     filtered.sort((a, b) => {
       const dateA = a.readings?.reading_date
         ? dayjs(a.readings.reading_date)
@@ -140,7 +140,7 @@ const Home = () => {
       const dateB = b.readings?.reading_date
         ? dayjs(b.readings.reading_date)
         : dayjs(0);
-      return dateB - dateA;
+      return dateB - dateA; // Ordre décroissant
     });
 
     setFilteredMeters(filtered);
@@ -176,310 +176,202 @@ const Home = () => {
   const hasActiveFilters =
     searchTerm !== '' || dateFrom !== '' || dateTo !== '';
 
-  // Statistiques
-  const metersWithReadings = meters.filter((m) => m.readings?.reading_value);
-  const metersWithPhotos = meters.filter(
-    (m) => m.readings?.photos && m.readings.photos.length > 0,
-  );
-
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-      {/* Header Moderne */}
-      <header className="bg-white shadow-lg border-b-4 border-green-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl blur opacity-75 animate-pulse"></div>
-                <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-3 rounded-xl shadow-lg">
-                  <FaLeaf className="text-white text-2xl" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-700 to-emerald-600 bg-clip-text text-transparent">
-                  КАСПЭНЕРГОСБЫТ
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  {user ? (
-                    <span className="font-medium">
-                      Привет, {getFullName(user.username)} 👋
-                    </span>
-                  ) : (
-                    'Система управления счетчиками'
-                  )}
-                </p>
+    <div className="min-h-screen flex flex-col bg-green-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-4 shadow-lg">
+        <div className="w-full mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="bg-white p-2 rounded-lg mr-4 shadow-md">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 w-10 h-10 rounded-full flex items-center justify-center">
+                <FaLeaf className="text-white text-xl" />
               </div>
             </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">КАСПЭНЕРГОСБЫТ</h1>
+              <p className="text-green-100 flex items-center">
+                {user
+                  ? `Привет, ${getFullName(user.username)}`
+                  : 'Система управления счетчиками'}
+                <FaLeaf className="ml-2 text-green-200" />
+              </p>
+            </div>
+          </div>
 
-            <div className="flex gap-2 md:gap-3">
-              {hasPermission(['admin']) && (
-                <Button
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                >
-                  <FaUserShield />
-                  <span className="hidden md:inline font-medium">
-                    Управление
-                  </span>
-                </Button>
-              )}
-              <button
-                onClick={logout}
-                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          <div className="flex gap-3">
+            {hasPermission(['admin']) && (
+              <Button
+                onClick={() => navigate('/dashboard')}
+                className="bg-white text-green-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-100 transition-colors shadow-md border border-green-200"
               >
-                <FaSignOutAlt />
-                <span className="hidden md:inline font-medium">Выход</span>
-              </button>
-            </div>
+                <FaUserShield className="text-green-800" />
+                <span className="inline md:inline text-green-800">
+                  Управление пользователями
+                </span>
+              </Button>
+            )}
+            <button
+              onClick={logout}
+              className="bg-white text-red-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-50 transition-colors shadow-md border border-red-200"
+            >
+              <FaSignOutAlt />
+              <span className="hidden md:inline">Выход</span>
+            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistiques Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 transform hover:scale-105 transition-transform duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Всего счетчиков
-                </p>
-                <p className="text-3xl font-bold text-green-600 mt-2">
-                  {totalMeters}
-                </p>
-              </div>
-              <div className="bg-green-100 p-4 rounded-full">
-                <FaChartLine className="text-green-600 text-2xl" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-emerald-500 transform hover:scale-105 transition-transform duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  С показаниями
-                </p>
-                <p className="text-3xl font-bold text-emerald-600 mt-2">
-                  {metersWithReadings.length}
-                </p>
-              </div>
-              <div className="bg-emerald-100 p-4 rounded-full">
-                <FaCalendarAlt className="text-emerald-600 text-2xl" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-teal-500 transform hover:scale-105 transition-transform duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">С фото</p>
-                <p className="text-3xl font-bold text-teal-600 mt-2">
-                  {metersWithPhotos.length}
-                </p>
-              </div>
-              <div className="bg-teal-100 p-4 rounded-full">
-                <FaImage className="text-teal-600 text-2xl" />
+      <main className="flex-1 p-4 md:p-8">
+        <div className="w-full mx-auto bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 border border-green-100">
+          <div className="flex flex-col gap-4">
+            {/* Première ligne : Actions et items par page */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex flex-wrap gap-3">
+                {hasPermission(['admin', 'user']) && (
+                  <Add
+                    onUnauthorized={() =>
+                      alert('У вас нет разрешения на загрузку')
+                    }
+                  />
+                )}
+                <Download />
+                {hasPermission(['admin']) && (
+                  <Delete onDeleteSuccess={handleDeleteSuccess} />
+                )}
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="itemsPerPage"
+                    className="text-sm text-green-700"
+                  >
+                    Счетчиков на страницу:
+                  </label>
+                  <select
+                    id="itemsPerPage"
+                    value={metersPerPage}
+                    onChange={(e) => {
+                      setMetersPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
+                  >
+                    {[5, 10, 25, 50, 100].map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Actions et Filtres */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          {/* Actions */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-            <div className="flex flex-wrap gap-3">
-              {hasPermission(['admin', 'user']) && (
-                <Add
-                  onUnauthorized={() =>
-                    alert('У вас нет разрешения на загрузку')
-                  }
-                />
-              )}
-              <Download />
-              {hasPermission(['admin']) && (
-                <Delete onDeleteSuccess={handleDeleteSuccess} />
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  showFilters
-                    ? 'bg-green-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <FaFilter />
-                <span>Фильтры</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="itemsPerPage"
-                  className="text-sm font-medium text-gray-700 whitespace-nowrap"
-                >
-                  На странице:
-                </label>
-                <select
-                  id="itemsPerPage"
-                  value={metersPerPage}
-                  onChange={(e) => {
-                    setMetersPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all bg-white font-medium"
-                >
-                  {[5, 10, 25, 50, 100].map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-          {/* Zone de filtres expansible */}
-          {showFilters && (
-            <div className="border-t border-gray-200 pt-6 space-y-4 animate-fadeIn">
-              {/* Recherche */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                  <FaSearch className="text-gray-400" />
+            {/* Deuxième ligne : Filtres */}
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Recherche textuelle */}
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <FaSearch className="text-green-400" />
                 </div>
                 <input
                   type="text"
-                  placeholder="Rechercher par code, adresse, client..."
-                  className="w-full pl-11 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  placeholder="Поиск счетчиков..."
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-          )}{' '}
+          </div>
         </div>
 
-        {/* Table des compteurs */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="w-full mx-auto bg-white rounded-xl shadow-md overflow-hidden border border-green-100">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-green-600 to-emerald-700">
+            <table className="min-w-full">
+              <thead className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Code
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Код счетчика
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Client
+                  <th className="px-4 py-3 text-left font-semibold">Клиент</th>
+                  <th className="px-4 py-3 text-left font-semibold">Адрес</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Тип счетчика
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Adresse
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Показания
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Type
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Дата показаний
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Lecture
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    Photos
-                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">Фото</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-green-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-16 text-center">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mb-4"></div>
-                        <p className="text-gray-600 font-medium">
-                          Chargement des données...
-                        </p>
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
                       </div>
                     </td>
                   </tr>
                 ) : filteredMeters.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-16 text-center">
+                    <td
+                      colSpan="7"
+                      className="px-6 py-8 text-center text-green-600"
+                    >
                       <div className="flex flex-col items-center justify-center">
-                        <div className="bg-green-100 p-6 rounded-full mb-4">
-                          <FaLeaf className="text-6xl text-green-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-700 mb-2">
+                        <FaLeaf className="text-4xl text-green-300 mb-2" />
+                        <p className="text-lg">
                           {hasActiveFilters
-                            ? 'Aucun résultat'
-                            : 'Aucune donnée'}
-                        </p>
-                        <p className="text-gray-500">
-                          {hasActiveFilters
-                            ? 'Essayez de modifier vos critères de recherche'
-                            : 'Aucun compteur trouvé dans le système'}
+                            ? 'Нет результатов для выбранных фильтров'
+                            : 'Нет данных о счетчиках'}
                         </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredMeters.map((meter, index) => (
+                  filteredMeters.map((meter) => (
                     <tr
                       key={meter.meter_id_code}
-                      className={`hover:bg-green-50 transition-colors ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                      }`}
+                      className="hover:bg-green-50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-green-700">
-                          {meter.meter_id_code}
-                        </span>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.meter_id_code}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900 font-medium">
-                          {meter.client_name}
-                        </span>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.client_name}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-700">
-                          {meter.location_address}
-                        </span>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.location_address}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
+                      <td className="px-4 py-3">
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
                           {meter.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {meter.readings?.reading_value || (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </span>
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.readings?.reading_value || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-700">
-                          {meter.readings?.reading_date ? (
-                            dayjs(meter.readings.reading_date).format(
+                      <td className="px-4 py-3 text-green-700">
+                        {meter.readings?.reading_date
+                          ? dayjs(meter.readings.reading_date).format(
                               'DD MMM YYYY',
                             )
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </span>
+                          : 'N/A'}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {meter.readings?.photos?.map((url, photoIndex) => (
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {meter.readings?.photos?.map((url, index) => (
                             <a
-                              key={photoIndex}
+                              key={index}
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-semibold rounded-lg transition-all transform hover:scale-110 shadow-md"
+                              className="text-white bg-green-500 hover:bg-green-600 text-sm px-2 py-1 rounded flex items-center transition-colors"
                             >
-                              {photoIndex + 1}
+                              <span>{index + 1}</span>
                             </a>
                           ))}
                         </div>
@@ -491,107 +383,87 @@ const Home = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           {totalMeters > metersPerPage && (
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-700">
-                  Affichage de{' '}
-                  <span className="font-bold text-green-600">
-                    {Math.min(
-                      (currentPage - 1) * metersPerPage + 1,
-                      totalMeters,
-                    )}
-                  </span>{' '}
-                  à{' '}
-                  <span className="font-bold text-green-600">
-                    {Math.min(currentPage * metersPerPage, totalMeters)}
-                  </span>{' '}
-                  sur{' '}
-                  <span className="font-bold text-green-600">
-                    {totalMeters}
-                  </span>{' '}
-                  résultats
-                </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-green-200 bg-green-50">
+              <div className="text-sm text-green-700 mb-2 sm:mb-0">
+                Показано{' '}
+                <span className="font-medium">
+                  {Math.min((currentPage - 1) * metersPerPage + 1, totalMeters)}
+                </span>{' '}
+                -
+                <span className="font-medium">
+                  {' '}
+                  {Math.min(currentPage * metersPerPage, totalMeters)}
+                </span>{' '}
+                из
+                <span className="font-medium"> {totalMeters}</span> счетчиков
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={prevPage}
-                    disabled={currentPage === 1}
-                    className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                      currentPage === 1
-                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
-                        : 'text-green-700 bg-white hover:bg-green-50 shadow-sm'
-                    }`}
-                  >
-                    <FaChevronLeft className="text-xs" />
-                    <span>Précédent</span>
-                  </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className={`flex items-center px-3 py-1 rounded ${
+                    currentPage === 1
+                      ? 'text-green-300 cursor-not-allowed'
+                      : 'text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  <FaChevronLeft className="mr-1" /> Назад
+                </button>
 
-                  <div className="flex gap-1">
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
 
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => paginate(pageNum)}
-                          className={`w-10 h-10 rounded-lg font-semibold transition-all ${
-                            currentPage === pageNum
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md transform scale-110'
-                              : 'bg-white text-gray-700 hover:bg-green-50 shadow-sm'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => paginate(pageNum)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? 'bg-green-500 text-white'
+                          : 'text-green-700 hover:bg-green-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
 
-                  <button
-                    onClick={nextPage}
-                    disabled={currentPage === totalPages}
-                    className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                      currentPage === totalPages
-                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
-                        : 'text-green-700 bg-white hover:bg-green-50 shadow-sm'
-                    }`}
-                  >
-                    <span>Suivant</span>
-                    <FaChevronRight className="text-xs" />
-                  </button>
-                </div>
+                <button
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className={`flex items-center px-3 py-1 rounded ${
+                    currentPage === totalPages
+                      ? 'text-green-300 cursor-not-allowed'
+                      : 'text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  Вперед <FaChevronRight className="ml-1" />
+                </button>
               </div>
             </div>
           )}
         </div>
       </main>
 
-      {/* Footer moderne */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-gray-600">
-              <FaLeaf className="text-green-500 text-xl" />
-              <span className="font-medium">
-                © 2025 КАСПЭНЕРГОСБЫТ. СЧЕТ-УЧЕТ
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-                Version 1.0.1
-              </span>
-            </div>
-          </div>
+      {/* Footer */}
+      <footer className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-4 shadow-inner">
+        <div className="w-full mx-auto text-center">
+          <p className="flex items-center justify-center">
+            <FaLeaf className="mr-2 text-green-200" />© 2025 КАСПЭНЕРГОСБЫТ.
+            СЧЕТ-УЧЕТ
+          </p>
+          <p className="text-green-200 text-sm mt-1">Версия 1.0.1</p>
         </div>
       </footer>
     </div>
