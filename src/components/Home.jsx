@@ -81,10 +81,9 @@ const Home = () => {
     }
   }, [user]);
 
-  const getFullName = (username) => {
-    const u = users.find((u) => u.username === username);
-    return u ? u.full_name : username;
-    // fallback sur username si full_name non connu
+  const getFullName = (userId) => {
+    const user = users.find((u) => u.id === userId);
+    return user ? user.full_name || user.username : 'N/A';
   };
 
   // Filtrage + tri côté client
@@ -186,7 +185,7 @@ const Home = () => {
               <h1 className="text-2xl md:text-3xl font-bold">КАСПЭНЕРГОСБЫТ</h1>
               <p className="text-green-100 flex items-center">
                 {user
-                  ? `Привет, ${getFullName(user.username)}`
+                  ? `Привет, ${getFullName(user.id)}`
                   : 'Система управления счетчиками'}
                 <FaLeaf className="ml-2 text-green-200" />
               </p>
@@ -288,10 +287,12 @@ const Home = () => {
                   <th className="px-4 py-3 text-left font-semibold">
                     Код счетчика
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold">Клиент</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Наименование объекта сети
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold">Адрес</th>
                   <th className="px-4 py-3 text-left font-semibold">
-                    Тип счетчика
+                    Исполнитель
                   </th>
                   <th className="px-4 py-3 text-left font-semibold">
                     Показания
@@ -344,7 +345,9 @@ const Home = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                          {meter.type}
+                          {meter.readings
+                            ? getFullName(meter.readings.user_id)
+                            : 'N/A'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-green-700">
