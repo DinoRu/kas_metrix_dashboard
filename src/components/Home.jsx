@@ -276,76 +276,7 @@ const Home = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-
-              {/* Filtre de date */}
-              <div className="flex flex-col sm:flex-row gap-3 items-center">
-                <div className="flex items-center gap-2">
-                  <FaCalendarAlt className="text-green-500" />
-                  <label
-                    htmlFor="dateFrom"
-                    className="text-sm text-green-700 whitespace-nowrap"
-                  >
-                    Дата с:
-                  </label>
-                  <input
-                    id="dateFrom"
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="dateTo"
-                    className="text-sm text-green-700 whitespace-nowrap"
-                  >
-                    до:
-                  </label>
-                  <input
-                    id="dateTo"
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 transition-all bg-white text-green-800"
-                  />
-                </div>
-
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="bg-red-100 text-red-700 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-red-200 transition-colors border border-red-300"
-                    title="Очистить фильтры"
-                  >
-                    <FaTimes />
-                    <span className="text-sm">Очистить</span>
-                  </button>
-                )}
-              </div>
             </div>
-
-            {/* Indicateur de filtres actifs */}
-            {hasActiveFilters && (
-              <div className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                Активные фильтры:
-                {searchTerm && (
-                  <span className="ml-2 font-medium">
-                    Поиск: &quot;{searchTerm}&quot;
-                  </span>
-                )}
-                {dateFrom && (
-                  <span className="ml-2 font-medium">
-                    С: {dayjs(dateFrom).format('DD.MM.YYYY')}
-                  </span>
-                )}
-                {dateTo && (
-                  <span className="ml-2 font-medium">
-                    До: {dayjs(dateTo).format('DD.MM.YYYY')}
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
